@@ -1,91 +1,78 @@
 const { dialog } = require('electron').remote;
-const { shell } = require('electron');
+const { shell, ipcRenderer } = require('electron');
+const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
+
+let allData = [];
+let progressBarEle;
+let currentProgressEle;
+//Log file path
+const logFilePath = `${__dirname}\\logs\\log.txt`;
 
 window.addEventListener('DOMContentLoaded', () => {
   let globalState = {};
-
+  progressBarEle = document.querySelector('.progress');
+  currentProgressEle = progressBarEle.querySelector('.determinate');
   //Get file elements
-  const fileElement = document.getElementById('fileElement');
-  const fileName = document
-    .getElementById('file__name')
-    .querySelectorAll('span')[1];
-  const fileDir = document
-    .getElementById('file__dir')
-    .querySelectorAll('span')[1];
-  const fileExe = document
-    .getElementById('file__exe')
-    .querySelectorAll('span')[1];
-  const fileDesc = document.getElementById('file__desc');
-  const fileIcon = document.getElementById('file__icon');
-
-  //Get add new exe button
-  const addBtn = document.getElementById('addBtn');
-  const addBtnIcon = addBtn.querySelector('i');
+  const {
+    addBtn,
+    addBtnIcon,
+    fileDesc,
+    fileIcon,
+    fileElement,
+    fileName,
+    fileDir,
+    fileExe,
+  } = getFileElements();
 
   //Add button click event listener
-  addBtn.addEventListener('click', (event) => {
+  addBtn.addEventListener('click', async (event) => {
     //Check if already clicked
     if (addBtnIcon.innerText === 'check') {
       //Add item to file
-      globalState.desc = fileDesc.value;
-      globalState.icon = fileIcon.value;
-      if (!!globalState.desc && !!globalState.icon) {
-        fileElement.classList.add('hide');
-        allData.push({
-          title: globalState.name,
-          description: globalState.desc,
-          dir: globalState.dir,
-          icon: globalState.icon,
-          exe: globalState.exe,
-        });
-        writeJSON('data\\data.json', { data: allData });
-        //Reload the view
-        attachCards(allData);
-        M.toast({ html: `${globalState.name} Added` });
-        globalState = {};
-      }
-      addBtnIcon.innerText = 'add';
+      globalState = await handleItemAdd({
+        globalState,
+        fileDesc,
+        fileIcon,
+        fileElement,
+        addBtnIcon,
+      });
     } else {
       //Prompt user to select a file
-      dialog
-        .showOpenDialog({
-          properties: ['openFile'],
-          filters: [{ name: 'Executables', extensions: ['exe'] }],
-        })
-        .then((data) => {
-          const path = data.filePaths[0];
-          if (!!path) {
-            globalState.dir = path.substr(0, path.lastIndexOf('\\'));
-            globalState.exe = path.substr(
-              path.lastIndexOf('\\') + 1,
-              path.length
-            );
-            globalState.name = globalState.exe
-              .substr(0, globalState.exe.lastIndexOf('.'))
-              .toUpperCase();
-            fileName.innerText = `: ${globalState.name}`;
-            fileDir.innerText = `: ${globalState.dir}`;
-            fileExe.innerText = `: ${globalState.exe}`;
-            fileElement.classList.remove('hide');
-            fileElement.classList.add(['d-flex', 'flex-column']);
-            addBtnIcon.innerText = 'check';
-          }
-        });
+      handleDialogOpen({
+        globalState,
+        fileName,
+        fileDir,
+        fileExe,
+        fileElement,
+        addBtnIcon,
+      });
     }
   });
   //Get and display all data in file on load
-  const allData = readJSON('data\\data.json');
+  allData = readJSON('data\\data.json');
   if (!!allData) attachCards(allData);
 });
 
+ipcRenderer.on('download progress', (event, { percent }) => {
+  // console.log(progress); // Progress in fraction, between 0 and 1
+  // const progressInPercentages = progress * 100; // With decimal point and a bunch of numbers
+  const cleanProgressInPercentages = Math.floor(percent * 100); // Without decimal point
+
+  console.log(cleanProgressInPercentages);
+  currentProgressEle.style.width = `${cleanProgressInPercentages}%`;
+  if (cleanProgressInPercentages === 100) progressBarEle.classList.add('hide');
+});
+ipcRenderer.on('download complete', (event, file) => {
+  // console.log(file); // Full file path
+});
 //HELPERS
 const readJSON = (path) => {
   try {
     const data = fs.readFileSync(`${__dirname}\\${path}`, 'utf8');
     return JSON.parse(data).data;
   } catch (e) {
-    return false;
+    return [];
   }
 };
 
@@ -94,6 +81,8 @@ const writeJSON = (path, data) => {
     const jsonString = JSON.stringify(data);
     fs.writeFileSync(`${__dirname}\\${path}`, jsonString);
   } catch (e) {
+    const newLog = `INFO ||\t\t Write Error \t\t ${e} \t\t ${new Date().toISOString()}\n`;
+    fs.appendFileSync(logFilePath, newLog);
     return false;
   }
 };
@@ -153,8 +142,6 @@ const attachCards = (ALL_CARDS) => {
 
     //Add click event listener on the open link in order to open the selected executable
     cardLink.addEventListener('click', (e) => {
-      //Log file path
-      const filePath = `${__dirname}\\logs\\log.txt`;
       //Confirm dialog box
       dialog
         .showMessageBox({
@@ -172,7 +159,7 @@ const attachCards = (ALL_CARDS) => {
               const newLog = `ERROR ||\t\t ${e} \t\t ${
                 c.title
               } \t\t ${new Date().toISOString()}\n`;
-              fs.appendFileSync(filePath, newLog);
+              fs.appendFileSync(logFilePath, newLog);
             });
           }
           //If cancel button was pressed on the confirm dialog then log that to the file
@@ -180,7 +167,7 @@ const attachCards = (ALL_CARDS) => {
             const newLog = `INFO ||\t\t Cancelled \t\t ${
               c.title
             } \t\t ${new Date().toISOString()}\n`;
-            fs.appendFileSync(filePath, newLog);
+            fs.appendFileSync(logFilePath, newLog);
           }
         });
     });
@@ -195,4 +182,108 @@ const attachCards = (ALL_CARDS) => {
     card__depth2.appendChild(linkContainer);
     cardContainer.appendChild(card);
   }
+};
+
+const handleDialogOpen = ({
+  globalState,
+  fileName,
+  fileDir,
+  fileExe,
+  fileElement,
+  addBtnIcon,
+}) => {
+  dialog
+    .showOpenDialog({
+      properties: ['openFile'],
+      filters: [{ name: 'Executables', extensions: ['exe'] }],
+    })
+    .then((data) => {
+      const path = data.filePaths[0];
+      if (!!path) {
+        globalState.dir = path.substr(0, path.lastIndexOf('\\'));
+        globalState.exe = path.substr(path.lastIndexOf('\\') + 1, path.length);
+        globalState.name = globalState.exe
+          .substr(0, globalState.exe.lastIndexOf('.'))
+          .toUpperCase();
+        fileName.innerText = `: ${globalState.name}`;
+        fileDir.innerText = `: ${globalState.dir}`;
+        fileExe.innerText = `: ${globalState.exe}`;
+        fileElement.classList.remove('hide');
+        fileElement.classList.add(['d-flex', 'flex-column']);
+        addBtnIcon.innerText = 'check';
+      }
+    });
+};
+
+const handleItemAdd = async ({
+  globalState,
+  fileDesc,
+  fileIcon,
+  fileElement,
+  addBtnIcon,
+}) => {
+  progressBarEle.classList.remove('hide');
+
+  globalState.desc = fileDesc.value;
+  globalState.icon = fileIcon.value;
+  if (!!globalState.desc && !!globalState.icon) {
+    const iconFileName = `${uuidv4()}${globalState.icon.substr(
+      globalState.icon.lastIndexOf('.'),
+      globalState.icon.length
+    )}`;
+    const iconFileDirectory = `${__dirname}/images`;
+
+    await ipcRenderer.invoke('download', {
+      url: globalState.icon,
+      properties: {
+        directory: iconFileDirectory,
+        filename: iconFileName,
+      },
+    });
+
+    fileElement.classList.add('hide');
+    allData.push({
+      title: globalState.name,
+      description: globalState.desc,
+      dir: globalState.dir,
+      icon: `images/${iconFileName}`,
+      exe: globalState.exe,
+    });
+    writeJSON('data\\data.json', { data: allData });
+    //Reload the view
+    attachCards(allData);
+    M.toast({ html: `${globalState.name} Added` });
+    globalState = {};
+  }
+  addBtnIcon.innerText = 'add';
+  return globalState;
+};
+
+const getFileElements = () => {
+  const fileElement = document.getElementById('fileElement');
+  const fileName = document
+    .getElementById('file__name')
+    .querySelectorAll('span')[1];
+  const fileDir = document
+    .getElementById('file__dir')
+    .querySelectorAll('span')[1];
+  const fileExe = document
+    .getElementById('file__exe')
+    .querySelectorAll('span')[1];
+  const fileDesc = document.getElementById('file__desc');
+  const fileIcon = document.getElementById('file__icon');
+
+  //Get add new exe button
+  const addBtn = document.getElementById('addBtn');
+  const addBtnIcon = addBtn.querySelector('i');
+  return {
+    addBtn,
+    addBtnIcon,
+    fileDesc,
+    fileIcon,
+    fileElement,
+    fileName,
+    fileDir,
+    fileExe,
+  };
 };

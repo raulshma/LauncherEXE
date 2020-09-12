@@ -7,7 +7,8 @@ Add exe files to the launcher which can then be launched using the open button. 
 ## Todo
 
 - [x] And and list items
-- [ ] Store images locally
+- [x] Store images locally
+- [ ] Resize image before storing
 - [ ] Modify and Delete previously added items
 - [ ] Sorting function
 - [ ] Change order using drag and drop!
