@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      href="node_modules/material-icons-font/material-icons-font.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="node_modules/materialize-css/dist/css/materialize.min.css"
+    />
+    <link
+      rel="stylesheet"
+      href="node_modules/bootstrap/dist/css/bootstrap-utilities.min.css"
+    />
+    <style>
+      .w-150 {
+        width: 150px;
+      }
+      .w-full {
+        width: 100%;
+      }
+      .card_p_fixed {
+        height: 4.6rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+    </style>
+    <script
+      src="node_modules/materialize-css/dist/js/materialize.min.js"
+      defer
+    ></script>
+    <title>LauncherEXE</title>
+  </head>
+  <body>
+    <div
+      class="container p-3 d-flex flex-column justify-content-center align-items-center"
+    >
+      <a
+        class="btn-floating btn cyan pulse waves-effect waves-light hoverable"
+        id="addBtn"
+        ><i class="material-icons">add</i></a
+      >
+      <div class="hide" id="fileElement">
+        <div id="file__name">
+          <span class="text-left d-inline-block w-150 font-weight-bold"
+            >Name</span
+          >
+          <span></span>
+        </div>
+        <div id="file__exe">
+          <span class="text-left d-inline-block w-150 font-weight-bold"
+            >Executable Name</span
+          >
+          <span></span>
+        </div>
+        <div id="file__dir">
+          <span class="text-left d-inline-block w-150 font-weight-bold"
+            >Executable Directory</span
+          >
+          <span></span>
+        </div>
+        <div class="input-field">
+          <input type="url" id="file__icon" /><label for="file__icon"
+            >Icon URL</label
+          >
+        </div>
+        <div class="input-field">
+          <textarea
+            cols="10"
+            rows="4"
+            name="file__desc"
+            id="file__desc"
+            class="materialize-textarea"
+          ></textarea>
+          <label for="file__desc">Description</label>
+        </div>
+      </div>
+    </div>
+    <div
+      class="row mb-0 justify-content-center align-items-center"
+      id="containCards"
+    ></div>
+  </body>
+</html>

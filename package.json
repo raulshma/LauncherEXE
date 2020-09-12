@@ -1,0 +1,19 @@
+{
+  "name": "launcherexe",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "dependencies": {
+    "bootstrap": "^5.0.0-alpha1",
+    "electron": "^10.1.1",
+    "material-icons-font": "^2.1.0",
+    "materialize-css": "^1.0.0-rc.2"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "start": "electron .",
+    "dev": "electron . --debug"
+  },
+  "author": "",
+  "license": "MIT"
+}
