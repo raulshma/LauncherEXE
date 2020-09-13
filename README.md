@@ -8,10 +8,11 @@ Add exe files to the launcher which can then be launched using the open button. 
 
 - [x] And and list items
 - [x] Store images locally
-- [ ] Resize image before storing
+- [x] Resize image before storing
 - [ ] Modify and Delete previously added items
 - [ ] Sorting function
 - [ ] Change order using drag and drop!
+- [ ] Package app
 - [ ] more...
 
 ## Run
