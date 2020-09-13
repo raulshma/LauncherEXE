@@ -5,18 +5,30 @@
   "main": "main.js",
   "dependencies": {
     "bootstrap": "^5.0.0-alpha1",
-    "electron": "^10.1.1",
     "electron-dl": "^3.0.2",
     "jimp": "^0.16.1",
     "material-icons-font": "^2.1.0",
     "materialize-css": "^1.0.0-rc.2",
     "uuid": "^8.3.0"
   },
-  "devDependencies": {},
   "scripts": {
     "start": "electron .",
-    "dev": "electron . --debug"
+    "dev": "electron . --debug",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
   },
   "author": "raulshma",
-  "license": "MIT"
+  "license": "MIT",
+  "build": {
+    "appId": "xyz.raulshma.launcherexe",
+    "mac": {
+      "category": "public.app-category.productivity"
+    },
+    "copyright": "Copyright © 2020 raulshma",
+    "compression": "maximum"
+  },
+  "devDependencies": {
+    "electron": "^10.1.1",
+    "electron-builder": "^22.8.0"
+  }
 }
