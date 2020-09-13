@@ -27,6 +27,23 @@
         overflow: hidden;
         text-overflow: ellipsis;
       }
+      .delete__button {
+        transform: scale(0);
+        opacity: 0;
+        top: 0.6rem;
+        right: 0.8rem;
+        transition: opacity 300ms ease;
+      }
+      .main__card:hover .delete__button {
+        transform: scale(0.9);
+        opacity: 1;
+      }
+      #toast-container {
+        top: auto !important;
+        left: auto !important;
+        bottom: 3%;
+        right: 3%;
+      }
     </style>
     <script
       src="node_modules/materialize-css/dist/js/materialize.min.js"
@@ -43,7 +60,7 @@
       class="container p-3 d-flex flex-column justify-content-center align-items-center"
     >
       <a
-        class="btn-floating btn cyan pulse waves-effect waves-light hoverable"
+        class="btn-floating btn cyan pulse waves-effect waves-light black tooltipped"
         id="addBtn"
         ><i class="material-icons">add</i></a
       >

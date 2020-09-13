@@ -67,10 +67,22 @@ ipcRenderer.on('download complete', (event, file) => {
     if (!err)
       Jimp.read(file, (err, lenna) => {
         if (err) log('ERROR', err, 'Read Failed');
-        lenna.resize(300, Jimp.AUTO).quality(72).write(file);
+        lenna.resize(500, Jimp.AUTO).quality(72).write(file);
       });
     else console.log(err);
   });
+});
+
+ipcRenderer.on('remove item', (event, data) => {
+  const item = allData.find((e) => e.id === data.id);
+  fs.unlink(item.icon, (err) => {
+    if (err) log('ERROR', err, 'Image delete failed');
+    else log('INFO', null, 'Image delete success');
+  });
+  allData = allData.filter((e) => e.id !== item.id);
+  writeJSON('data\\data.json', { data: allData });
+  attachCards(allData);
+  M.toast({ html: `Item Removed` });
 });
 
 //HELPERS
@@ -87,7 +99,7 @@ const writeJSON = (path, data) => {
   try {
     const jsonString = JSON.stringify(data);
     fs.writeFile(`${__dirname}\\${path}`, jsonString, (err) => {
-      if (!err) log('INFO', 'New Item Added');
+      if (!err) log('INFO', null, 'New Item Added');
       else log('ERROR', err);
     });
   } catch (e) {
@@ -107,10 +119,19 @@ const attachCards = (ALL_CARDS) => {
   for (let c of ALL_CARDS) {
     //Create html element for the card and populate its inner text and set styles
     const card = document.createElement('div');
-    card.classList.add('col', 'xs12', 's6', 'm4', 'l3', 'xl2');
+    card.classList.add(
+      'main__card',
+      'col',
+      'xs12',
+      's6',
+      'm4',
+      'l3',
+      'xl2',
+      'position-relative'
+    );
 
     const card__depth1 = document.createElement('div');
-    card__depth1.classList.add('card', 'hoverable');
+    card__depth1.classList.add('card');
     let card__image;
     card__image = document.createElement('div');
     Object.assign(card__image.style, {
@@ -146,7 +167,9 @@ const attachCards = (ALL_CARDS) => {
       'w-full',
       'btn',
       'btn-primary',
-      'btn-large'
+      'btn-large',
+      'grey',
+      'darken-4'
     );
 
     //Add click event listener on the open link in order to open the selected executable
@@ -176,8 +199,12 @@ const attachCards = (ALL_CARDS) => {
     });
     linkContainer.appendChild(cardLink);
 
-    //Append Everything to the column div
+    const deleteDiv = document.createElement('div');
+    deleteDiv.classList.add('delete__button', 'position-absolute');
+    deleteDiv.innerHTML = `<a class="btn-floating btn-sm waves-effect waves-light red accent-3" onclick="removeItem('${c.id}')"><i class="material-icons">delete</i></a>`;
+
     card.appendChild(card__depth1);
+    card.appendChild(deleteDiv);
     card__depth1.appendChild(card__image);
     card__depth1.appendChild(card__depth2);
     card__depth2.appendChild(cardTitle);
@@ -246,11 +273,13 @@ const handleItemAdd = async ({
 
     fileElement.classList.add('hide');
     allData.push({
+      id: uuidv4(),
       title: globalState.name,
       description: globalState.desc,
       dir: globalState.dir,
       icon: `images/${iconFileName}`,
       exe: globalState.exe,
+      timestamp: Date.now(),
     });
     writeJSON('data\\data.json', { data: allData });
     //Reload the view

@@ -43,6 +43,10 @@ app.whenReady().then(() => {
     return savePath;
   });
 
+  ipcMain.handle('remove item', async (event, info) => {
+    mainWindow.webContents.send('remove item', info);
+  });
+
   app.on('activate', function () {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
