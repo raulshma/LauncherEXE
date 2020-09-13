@@ -1,13 +1,13 @@
 const { dialog } = require('electron').remote;
 const { shell, ipcRenderer } = require('electron');
 const { v4: uuidv4 } = require('uuid');
+const Jimp = require('jimp');
 const fs = require('fs');
+const log = require('./logger');
 
 let allData = [];
 let progressBarEle;
 let currentProgressEle;
-//Log file path
-const logFilePath = `${__dirname}\\logs\\log.txt`;
 
 window.addEventListener('DOMContentLoaded', () => {
   let globalState = {};
@@ -55,17 +55,24 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 ipcRenderer.on('download progress', (event, { percent }) => {
-  // console.log(progress); // Progress in fraction, between 0 and 1
-  // const progressInPercentages = progress * 100; // With decimal point and a bunch of numbers
-  const cleanProgressInPercentages = Math.floor(percent * 100); // Without decimal point
-
-  console.log(cleanProgressInPercentages);
+  const cleanProgressInPercentages = Math.floor(percent * 100);
   currentProgressEle.style.width = `${cleanProgressInPercentages}%`;
-  if (cleanProgressInPercentages === 100) progressBarEle.classList.add('hide');
+  if (cleanProgressInPercentages === 100) {
+    currentProgressEle.style.width = '0%';
+    progressBarEle.classList.add('hide');
+  }
 });
 ipcRenderer.on('download complete', (event, file) => {
-  // console.log(file); // Full file path
+  fs.readFile(file, (err, data) => {
+    if (!err)
+      Jimp.read(file, (err, lenna) => {
+        if (err) log('ERROR', err, 'Read Failed');
+        lenna.resize(300, Jimp.AUTO).quality(72).write(file);
+      });
+    else console.log(err);
+  });
 });
+
 //HELPERS
 const readJSON = (path) => {
   try {
@@ -79,10 +86,12 @@ const readJSON = (path) => {
 const writeJSON = (path, data) => {
   try {
     const jsonString = JSON.stringify(data);
-    fs.writeFileSync(`${__dirname}\\${path}`, jsonString);
+    fs.writeFile(`${__dirname}\\${path}`, jsonString, (err) => {
+      if (!err) log('INFO', 'New Item Added');
+      else log('ERROR', err);
+    });
   } catch (e) {
-    const newLog = `INFO ||\t\t Write Error \t\t ${e} \t\t ${new Date().toISOString()}\n`;
-    fs.appendFileSync(logFilePath, newLog);
+    log('ERROR', err);
     return false;
   }
 };
@@ -156,18 +165,12 @@ const attachCards = (ALL_CARDS) => {
           if (e.response === 0) {
             //Open the file or log if error
             shell.openExternal(`${c.dir}\\${c.exe}`).catch((e) => {
-              const newLog = `ERROR ||\t\t ${e} \t\t ${
-                c.title
-              } \t\t ${new Date().toISOString()}\n`;
-              fs.appendFileSync(logFilePath, newLog);
+              log('ERROR', e, c.title);
             });
           }
           //If cancel button was pressed on the confirm dialog then log that to the file
           if (e.response === 1) {
-            const newLog = `INFO ||\t\t Cancelled \t\t ${
-              c.title
-            } \t\t ${new Date().toISOString()}\n`;
-            fs.appendFileSync(logFilePath, newLog);
+            log('ERROR', 'Cancelled Open', c.title);
           }
         });
     });
