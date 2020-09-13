@@ -12,7 +12,7 @@ Add exe files to the launcher which can then be launched using the open button. 
 - [ ] Modify and Delete previously added items
 - [ ] Sorting function
 - [ ] Change order using drag and drop!
-- [ ] Package app
+- [x] Package app
 - [ ] more...
 
 ## Run
